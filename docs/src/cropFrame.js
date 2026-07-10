@@ -19,11 +19,16 @@ function positionFrame() {
   const container = map.getContainer();
   const w = container.clientWidth;
   const h = container.clientHeight;
-  const size = Math.min(w, h) * FRAME_RATIO;
+  const isMobile = window.matchMedia("(max-width: 640px)").matches;
+  const reservedTop = isMobile ? 260 : 0;
+  const reservedBottom = isMobile ? 150 : 0;
+  const usableHeight = Math.max(180, h - reservedTop - reservedBottom);
+  const size = Math.min(w, usableHeight) * FRAME_RATIO;
+  const topBase = isMobile ? reservedTop + (usableHeight - size) / 2 : (h - size) / 2;
   frameEl.style.width = `${size}px`;
   frameEl.style.height = `${size}px`;
   frameEl.style.left = `${(w - size) / 2}px`;
-  frameEl.style.top = `${(h - size) / 2}px`;
+  frameEl.style.top = `${topBase}px`;
 }
 
 export function setCropFrameVisible(visible) {

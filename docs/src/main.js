@@ -89,6 +89,10 @@ const catalogCheckboxesEl = document.getElementById("catalog-checkboxes");
 const legendPanelEl = document.getElementById("legend-panel");
 const legendEntriesEl = document.getElementById("legend-entries");
 const overlayPanelEl = document.getElementById("overlay-panel");
+const mobileMediaQuery = window.matchMedia("(max-width: 640px)");
+const searchCardEl = document.getElementById("search-card");
+const searchCardBodyEl = document.getElementById("search-card-body");
+const searchCardToggleEl = document.getElementById("search-card-toggle");
 
 let currentCity = "";
 let suppressUrlSync = false;
@@ -111,6 +115,109 @@ const LOADING_TEXT_FETCH =
 const LOADING_TEXT_FETCH_RETRY =
   "OSMからデータを取得しています…<br><small>2回目以降は混雑により時間がかかることがあります。しばらく動きがない場合は、タブを閉じて開き直してみてください。</small>";
 let isRetryFetch = false;
+const mobileUi = {
+  controlsEl: null,
+  layerToggleBtn: null,
+  legendToggleBtn: null,
+  overlayOpen: false,
+  legendOpen: false,
+};
+const searchCardUi = {
+  collapsed: false,
+};
+
+function isMobileLayout() {
+  return mobileMediaQuery.matches;
+}
+
+function applySearchCardState() {
+  const mobile = isMobileLayout();
+  const collapsed = mobile && searchCardUi.collapsed;
+  searchCardEl.classList.toggle("is-collapsed", collapsed);
+  searchCardBodyEl.hidden = collapsed;
+  searchCardToggleEl.hidden = !mobile;
+  searchCardToggleEl.setAttribute("aria-expanded", collapsed ? "false" : "true");
+  searchCardToggleEl.textContent = collapsed ? "ひらく" : "しまう";
+}
+
+function setSearchCardCollapsed(collapsed) {
+  searchCardUi.collapsed = collapsed;
+  applySearchCardState();
+}
+
+function ensureMobilePanelUi() {
+  if (mobileUi.controlsEl) return;
+
+  const controls = document.createElement("div");
+  controls.className = "mobile-panel-toggles";
+  controls.hidden = true;
+  controls.innerHTML = `
+    <button type="button" class="mobile-panel-toggle" data-target="layers">表示切替</button>
+    <button type="button" class="mobile-panel-toggle" data-target="legend">凡例</button>
+  `;
+  overlayPanelEl.parentElement.appendChild(controls);
+
+  const overlayHeader = document.createElement("div");
+  overlayHeader.className = "overlay-panel-header";
+  overlayHeader.innerHTML = `<h3>表示切替</h3><button type="button" class="panel-close-btn" aria-label="表示切替を閉じる">×</button>`;
+  overlayPanelEl.prepend(overlayHeader);
+
+  const legendHeader = document.createElement("div");
+  legendHeader.className = "legend-panel-header";
+  legendHeader.innerHTML = `<h3>凡例</h3><button type="button" class="panel-close-btn" aria-label="凡例を閉じる">×</button>`;
+  legendPanelEl.prepend(legendHeader);
+
+  mobileUi.controlsEl = controls;
+  mobileUi.layerToggleBtn = controls.querySelector('[data-target="layers"]');
+  mobileUi.legendToggleBtn = controls.querySelector('[data-target="legend"]');
+
+  mobileUi.layerToggleBtn.addEventListener("click", () => {
+    mobileUi.overlayOpen = !mobileUi.overlayOpen;
+    if (mobileUi.overlayOpen) mobileUi.legendOpen = false;
+    applyMobilePanelState();
+  });
+  mobileUi.legendToggleBtn.addEventListener("click", () => {
+    mobileUi.legendOpen = !mobileUi.legendOpen;
+    if (mobileUi.legendOpen) mobileUi.overlayOpen = false;
+    applyMobilePanelState();
+  });
+  overlayHeader.querySelector(".panel-close-btn").addEventListener("click", () => {
+    mobileUi.overlayOpen = false;
+    applyMobilePanelState();
+  });
+  legendHeader.querySelector(".panel-close-btn").addEventListener("click", () => {
+    mobileUi.legendOpen = false;
+    applyMobilePanelState();
+  });
+}
+
+function applyMobilePanelState() {
+  ensureMobilePanelUi();
+
+  const hasFetched = !!osm?.getFetchedBounds();
+  const showControls = isMobileLayout() && hasFetched;
+  mobileUi.controlsEl.hidden = !showControls;
+
+  if (!isMobileLayout()) {
+    overlayPanelEl.classList.remove("is-open");
+    legendPanelEl.classList.remove("is-open");
+    mobileUi.layerToggleBtn.classList.remove("is-active");
+    mobileUi.legendToggleBtn.classList.remove("is-active");
+    overlayPanelEl.hidden = false;
+    if (osm?.hasData()) legendPanelEl.hidden = false;
+    return;
+  }
+
+  overlayPanelEl.classList.toggle("is-open", showControls && mobileUi.overlayOpen);
+  legendPanelEl.classList.toggle("is-open", showControls && mobileUi.legendOpen && !legendPanelEl.hidden);
+  mobileUi.layerToggleBtn.classList.toggle("is-active", showControls && mobileUi.overlayOpen);
+  mobileUi.legendToggleBtn.classList.toggle("is-active", showControls && mobileUi.legendOpen && !legendPanelEl.hidden);
+  overlayPanelEl.hidden = false;
+}
+
+searchCardToggleEl.addEventListener("click", () => {
+  setSearchCardCollapsed(!searchCardUi.collapsed);
+});
 
 function setStatus(text, isError = false) {
   statusEl.textContent = text;
@@ -181,6 +288,8 @@ function updateLegend(visible = visibleCategories()) {
   const ids = FETCH_CATEGORY_IDS.filter((id) => visible.has(id));
   if (ids.length === 0 || !osm?.hasData()) {
     legendPanelEl.hidden = true;
+    mobileUi.legendOpen = false;
+    applyMobilePanelState();
     return;
   }
   const accessActive = activeLensId === "access";
@@ -206,6 +315,7 @@ function updateLegend(visible = visibleCategories()) {
   }
   legendEntriesEl.innerHTML = entries.join("");
   legendPanelEl.hidden = false;
+  applyMobilePanelState();
 }
 
 // ---- 取得ボタン ----
@@ -229,6 +339,7 @@ function updateFetchButton() {
   if (!osm || loadingCount > 0) {
     btnFetch.hidden = true;
     setCropFrameVisible(false);
+    applyMobilePanelState();
     return;
   }
   const hasFetched = !!osm.getFetchedBounds();
@@ -239,10 +350,14 @@ function updateFetchButton() {
   if (!hasFetched) {
     btnFetch.textContent = "この範囲のOSMデータを取得";
     btnFetch.hidden = false;
+    mobileUi.overlayOpen = false;
+    mobileUi.legendOpen = false;
+    applyMobilePanelState();
     return;
   }
   btnFetch.textContent = "この範囲でデータを再取得";
   btnFetch.hidden = !viewOutsideFetched();
+  applyMobilePanelState();
 }
 
 // 2回目以降の取得は、ページ再読み込みでは速くならないと判明した(Overpass側の
@@ -259,6 +374,11 @@ async function doFetch() {
     hasFetchedOnce = true;
     applyVisibility();
     overlayPanelEl.hidden = false;
+    setSearchCardCollapsed(true);
+    if (isMobileLayout()) {
+      mobileUi.overlayOpen = false;
+      mobileUi.legendOpen = false;
+    }
   }
   updateFetchButton();
 }
@@ -322,6 +442,8 @@ function buildCatalogCheckboxes() {
 
 map.on("load", async () => {
   initCropFrame(map);
+  ensureMobilePanelUi();
+  applySearchCardState();
 
   const catalogItems = await loadCatalogItems();
   catalogItemById = Object.fromEntries(catalogItems.map((item) => [item.id, item]));
@@ -401,6 +523,9 @@ cityForm.addEventListener("submit", async (e) => {
     currentCity = name;
     osm.clear(); // 前の街のデータは持ち越さない(取得はユーザーのボタン操作で)
     overlayPanelEl.hidden = true; // 取得前はボタン類を出さない(取得後に現れる)
+    mobileUi.overlayOpen = false;
+    mobileUi.legendOpen = false;
+    setSearchCardCollapsed(true);
     userMovedSinceSearch = false;
     lastHubCenter = center;
     map.jumpTo({ center, zoom: HUB_ZOOM });
@@ -469,4 +594,14 @@ function syncUrl() {
 map.on("moveend", () => {
   if (currentCity) syncUrl();
   updateFetchButton();
+});
+
+mobileMediaQuery.addEventListener("change", () => {
+  if (!isMobileLayout()) {
+    mobileUi.overlayOpen = false;
+    mobileUi.legendOpen = false;
+    searchCardUi.collapsed = false;
+  }
+  updateFetchButton();
+  applySearchCardState();
 });
