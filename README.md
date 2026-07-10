@@ -1,72 +1,113 @@
-# Read My City
+# TimeWalk / Read My City
 
-`Read My City` is a public web map that helps people read their city through OpenStreetMap.
+TimeWalk は、まちの成り立ちと現在の姿を、歩ける地図として読むためのプロジェクトです。
 
-The public GitHub Pages entry point is `docs/index.html`.
+キーワードは「令和のブラタモリ」。ただし公式番組との関係を示すものではなく、地形・道・歴史・土地利用・まちの空気を重ねて読み、現地を歩く体験に翻訳するための比喩です。
 
-Public URL:
+公開ページ:
 
-[https://builtbyko.github.io/readmycity/](https://builtbyko.github.io/readmycity/)
+- `docs/index.html`
+- <https://builtbyko.github.io/timewalk/>
 
-## Purpose
+現在の公開対象は `04_timewalk/` の TimeWalk 銀座版です。旧プロジェクトや実験ファイルが作業ツリーに残る場合がありますが、公開の中心は TimeWalk です。
 
-This project has two main goals:
+## 公開中のマップ
 
-- help people quickly understand the character of a place through map layers
-- share the richness and public value of OpenStreetMap with a wider audience
+### TimeWalk #01: 銀座
 
-It is meant to be easy to open, easy to use, and useful even for people who do not usually work with GIS.
+銀座を「消えた川の上を歩く」まちとして読み直す、1ページ完結の街歩き地図です。
 
-## What The Map Shows
+主に次の情報を重ねています。
 
-The public map combines selected OpenStreetMap-based layers such as:
+- OpenStreetMap 由来の歩行空間
+- ギャラリー・稲荷・戦前建築などの現在地点
+- 歴史を体感しやすい視点場
+- かつての川や堀の推定ライン
+- 国土地理院の年代別空中写真タイル
+- 出典つきの読み物と歩き方のメモ
 
-- sidewalks
-- pedestrian streets
-- parks and green spaces
-- bicycle parking and bike-share ports
-- cycleways
-- parking
-- large retail and other everyday urban features
+この地図は、街歩きと解釈のためのガイドです。推定ライン、推定範囲、代表点は表示上の参考情報であり、公式境界、公式座標、精密な測量成果ではありません。
 
-Users can search for a place, adjust the visible area, and re-fetch data for the current map extent.
+## 目指しているもの
 
-## OSM Notice
+TimeWalk は、データ分析そのものを見せるプロジェクトではありません。文献、地図、現在の街路、施設、地形、空中写真を読み合わせて、「現地で何を見ると、そのまちの時間の流れが見えるのか」を編集するプロジェクトです。
 
-The amount and type of information shown on the map can vary by area because OpenStreetMap coverage is not equally detailed everywhere.
+理想は、スマートフォンを片手に歩いたとき、ただの道やビルの隙間が、かつての川、町割、産業、文化、制度の痕跡として見え始めることです。
 
-That difference is part of the point of this project. Places become easier to read when local map data is enriched and maintained.
+## 横展開の考え方
 
-## Data Policy
+今後、他の町でも同じ形式で展開します。1つの町につき、1つのページを作る方針です。
 
-This repository is intended for public release.
+町ごとに最初に決めること:
 
-- do not publish personal information, local absolute paths, API keys, or credentials
-- do not commit raw source datasets unless redistribution rights are clearly confirmed
-- do not describe approximate display geometry as official boundaries
+- その町を一言で読むための主題
+- 歩いたときに見える痕跡
+- 過去から現在への変化の軸
+- 地図で示すべき情報と、文章で読むべき情報
+- 推定として扱う情報と、事実として扱う情報
 
-See `data/README.md` for the publication policy for data and derived layers.
+無理に網羅しません。すべてを載せるより、「この町はこう読むと歩ける」という強い編集軸を優先します。
 
-## Repository Structure
+## 情報整理と調査手法
+
+調査は、次の順番で進めます。
+
+1. 文献・自治体資料・公式サイト・地域史を読み、町の主題候補を出す。
+2. 古地図、空中写真、地形、街路パターンを見て、現地で見える痕跡に変換する。
+3. OpenStreetMap や公開データから、歩行空間、施設、現在の集積を確認する。
+4. 現地で立つと意味がわかる視点場を選ぶ。
+5. 事実、推定、解釈を分けて本文と地図に落とす。
+
+公開文では、観察できる事実と解釈を分けます。用途、来訪者像、にぎわい、雰囲気などは断定しすぎず、出典と地図から言える範囲で慎重に書きます。
+
+## デザイン方針
+
+TimeWalk のデザインは、街歩き中のスマートフォン利用を前提にします。
+
+- 最初に地図を見せる。
+- 長い説明は地図の下に置く。
+- レイヤは増やしすぎず、歩く目的に必要なものに絞る。
+- 推定の線や範囲は、破線や半透明で明確に区別する。
+- 位置があいまいな情報は、正確そうに見せすぎない。
+- 出典と限界はページ内に残す。
+
+見た目は「資料」ではなく「歩きたくなる地図」を目指します。ただし、演出が事実の強さを上回らないようにします。
+
+## データ公開方針
+
+このリポジトリは公開を前提にしています。
+
+- 個人情報、ローカル絶対パス、API キー、トークン、認証情報を公開しない。
+- 再配布条件が確認できない生データはコミットしない。
+- Overpass キャッシュ、ローカルダウンロード、一時出力、作業ログは Git に入れない。
+- 推定した歴史範囲や旧水路は、公式境界ではなく参考表示として明記する。
+- 公開前に、ローカルパス、ユーザー名、メールアドレス、秘密情報、生データ混入を確認する。
+
+詳しくは `data/README.md` を参照してください。
+
+## 構成
 
 ```text
 .
+|-- 04_timewalk/
+|   |-- ginza/
+|   |   `-- index.html
+|   |-- scripts/
+|   `-- README.md
 |-- docs/
 |   |-- index.html
-|   |-- about.html
-|   |-- osm-about.html
-|   |-- css/
-|   |-- src/
-|   `-- config/
+|   `-- ginza/
+|       `-- index.html
 |-- data/
 |   `-- README.md
 |-- AGENTS.md
 |-- LICENSE
-`-- README.md
+|-- README.md
+`-- requirements.txt
 ```
 
-## Notes
+## Build Notes
 
-The public site is already built in `docs/`.
+銀座版は静的 HTML として生成しています。GitHub Pages 用の公開コピーは `docs/` に置きます。
 
-Local working folders, source caches, temporary exports, and non-public materials should stay out of Git unless they are explicitly prepared for publication.
+Before publishing, scan changed files for local paths, personal information, secrets, and non-redistributable raw data.

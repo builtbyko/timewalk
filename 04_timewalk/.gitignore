@@ -1,0 +1,18 @@
+# TimeWalk: 生データ・キャッシュ
+data/
+_overpass_*_cache.json
+
+# デバッグ用スクリプト
+*_recon.py
+debug_*.py
+scratch_*.py
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# OS
+.DS_Store
+Thumbs.db

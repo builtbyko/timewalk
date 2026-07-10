@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>@@TITLE@@</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.locatecontrol@0.79.0/dist/L.Control.Locate.min.css"/>
+<script src="https://unpkg.com/leaflet.locatecontrol@0.79.0/dist/L.Control.Locate.min.js"></script>
+<style>
+  html, body {margin:0; padding:0; height:auto;}
+  html {scroll-behavior:smooth;}
+  html, body {background:#0a0e14;}
+  #map {position:relative; width:100%; height:85vh;}
+
+  .tw-wrap {font-family:'Hiragino Sans','Yu Gothic',sans-serif; max-width:720px;
+            margin:0 auto; padding:28px 16px 100px; line-height:1.95; color:#c9d6e2;
+            font-size:16px;}
+  .tw-wrap h1 {font-size:1.6em; color:#fff; letter-spacing:.06em;
+               border-bottom:1px solid #17324a; padding-bottom:10px;
+               text-shadow:0 0 18px rgba(62,198,242,.35);}
+  .tw-wrap .catch {color:#7f93a8; font-size:.92em; margin-top:-6px;}
+  .tw-card {background:linear-gradient(180deg,#101a26 0%,#0d1520 100%);
+            border:1px solid #1b2c40; border-radius:14px;
+            padding:20px 22px 22px; margin:20px 0; position:relative; overflow:hidden;}
+  .tw-card::before {content:""; position:absolute; top:0; left:0; right:0; height:2px;
+            background:linear-gradient(90deg,#3ec6f2,#ff4fa3 55%,#7b5cff 85%,transparent);}
+  .tw-card h2 {font-size:1.18em; color:#3ec6f2; margin:0 0 12px; letter-spacing:.05em;}
+  .tw-card b {color:#eaf3fb;}
+  .tw-card i {color:#8fb8d8;}
+  .tw-wrap a {color:#4dd0e1;}
+  .tw-wrap .legend span {display:inline-block; margin-right:1em; font-size:.9em;}
+  .tw-wrap .src {font-size:.84em; color:#6d8296; word-break:break-all; line-height:1.8;}
+  .tw-choume dt {color:#ffd166; font-weight:bold; margin-top:12px;}
+  .tw-choume dd {margin:2px 0 0 0;}
+  .tw-fade {opacity:0; transform:translateY(16px); transition:opacity .7s ease, transform .7s ease;}
+  .tw-fade.on {opacity:1; transform:none;}
+
+  /* ヒーローオーバーレイ(GINZA+透かし漢字+ネオン管の明滅+色収差風の縁取り) */
+  #tw-hero {position:fixed; inset:0; z-index:9000; display:flex; flex-direction:column;
+            justify-content:center; align-items:center; text-align:center; cursor:pointer;
+            background:radial-gradient(ellipse at center, rgba(10,14,20,.18) 0%, rgba(10,14,20,.94) 100%);
+            transition:opacity .8s ease, filter .8s ease; filter:blur(0);
+            -webkit-tap-highlight-color:transparent;}
+  #tw-hero.gone {opacity:0; filter:blur(10px); pointer-events:none;}
+
+  .hero-kanji-bg {position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+            font-size:min(62vw, 440px); font-weight:900; line-height:1; letter-spacing:-.04em;
+            color:rgba(210,232,242,.05); pointer-events:none; user-select:none;
+            z-index:-1; white-space:nowrap;}
+  .hero-eyebrow {color:#3ec6f2; font-size:12px; letter-spacing:.5em; text-indent:.5em;
+            margin:0 0 18px; opacity:.85;}
+  .hero-latin {margin:0; font-size:clamp(48px, 15vw, 104px); font-weight:300;
+            letter-spacing:.32em; text-indent:.32em; line-height:1; color:#f2f7fb;
+            text-shadow:-2px 0 0 rgba(62,198,242,.55), 2px 0 0 rgba(255,79,163,.5);}
+  .hero-flicker {animation:neonflicker 4.2s infinite;}
+  @keyframes neonflicker {
+    0%, 19%, 21%, 23%, 55%, 57%, 100% { opacity:1; }
+    20%, 22%, 56% { opacity:.25; }
+  }
+  .hero-rule {width:64px; height:1px; margin:22px auto 16px;
+            background:linear-gradient(90deg,transparent,#3ec6f2,#ff4fa3,transparent);}
+  .hero-meta {color:#8fa3b8; font-size:12px; letter-spacing:.18em; margin:0;}
+  #tw-hero .hint {position:absolute; bottom:calc(34px + env(safe-area-inset-bottom));
+                  color:#5c7490; font-size:12px; letter-spacing:.3em; text-indent:.3em;
+                  animation:twpulse 2.2s ease-in-out infinite;}
+  @keyframes twpulse {0%,100%{opacity:.45} 50%{opacity:1}}
+
+  /* 地図⇔解説 ジャンプボタン */
+  .tw-jump {position:fixed; left:50%; transform:translateX(-50%);
+            bottom:calc(92px + env(safe-area-inset-bottom)); z-index:10000;
+            background:#101a26; color:#d7ecff; border:1px solid rgba(62,198,242,.45);
+            border-radius:999px; padding:12px 22px; font-size:15px; font-weight:bold;
+            font-family:'Hiragino Sans','Yu Gothic',sans-serif;
+            box-shadow:0 2px 14px rgba(0,0,0,.6), 0 0 10px rgba(62,198,242,.25);
+            cursor:pointer; -webkit-tap-highlight-color:transparent;}
+  .tw-jump:active {transform:translateX(-50%) scale(.95);}
+
+  /* タイムスライダー(下部固定バー) */
+  .tw-timebar {position:fixed; left:0; right:0; bottom:0; z-index:9500;
+    background:linear-gradient(180deg, rgba(10,14,20,0) 0%, rgba(10,14,20,.92) 30%, rgba(10,14,20,.97) 100%);
+    padding:10px 16px calc(14px + env(safe-area-inset-bottom));
+    transition:opacity .4s ease, transform .4s ease;}
+  .tw-timebar.tw-hidden {opacity:0; transform:translateY(12px); pointer-events:none;}
+  .tw-timebar-year {text-align:center; color:#f2f7fb; font-size:15px; font-weight:bold;
+    letter-spacing:.08em; margin-bottom:6px; text-shadow:0 0 10px rgba(62,198,242,.4);}
+  #tw-timebar-slider {width:100%; height:34px; -webkit-appearance:none; appearance:none;
+    background:transparent; touch-action:none; margin:0; display:block;}
+  #tw-timebar-slider::-webkit-slider-runnable-track {height:6px; border-radius:3px;
+    background:linear-gradient(90deg,#3ec6f2,#e8b84b 33%,#ff4fa3 66%,#a78bff);}
+  #tw-timebar-slider::-webkit-slider-thumb {-webkit-appearance:none; appearance:none;
+    width:28px; height:28px; border-radius:50%; background:#f2f7fb;
+    border:3px solid #3ec6f2; box-shadow:0 0 10px rgba(62,198,242,.6); margin-top:-11px;}
+  #tw-timebar-slider::-moz-range-track {height:6px; border-radius:3px;
+    background:linear-gradient(90deg,#3ec6f2,#e8b84b 33%,#ff4fa3 66%,#a78bff);}
+  #tw-timebar-slider::-moz-range-thumb {width:28px; height:28px; border-radius:50%;
+    background:#f2f7fb; border:3px solid #3ec6f2; box-shadow:0 0 10px rgba(62,198,242,.6); border:3px solid #3ec6f2;}
+  .tw-timebar-ticks {display:flex; justify-content:space-between; margin-top:4px;
+    font-size:10px; color:#7f93a8;}
+
+  /* タップ→解説ボトムシート */
+  .tw-sheet-backdrop {position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:9800;
+    opacity:0; pointer-events:none; transition:opacity .25s ease;}
+  .tw-sheet-backdrop.open {opacity:1; pointer-events:auto;}
+  .tw-sheet {position:fixed; left:0; right:0; bottom:0; z-index:9900; max-height:48vh;
+    overflow-y:auto; background:linear-gradient(180deg,#101a26 0%,#0d1520 100%);
+    border-top:1px solid #1b2c40; border-radius:18px 18px 0 0;
+    padding:10px 24px calc(24px + env(safe-area-inset-bottom));
+    transform:translateY(100%); transition:transform .3s ease;
+    box-shadow:0 -6px 30px rgba(0,0,0,.5);}
+  .tw-sheet.open {transform:translateY(0);}
+  .tw-sheet-handle {width:36px; height:4px; background:#2a3a4d; border-radius:2px; margin:6px auto 14px;}
+  .tw-sheet-close {position:absolute; top:10px; right:16px; background:none; border:none;
+    color:#7f93a8; font-size:22px; line-height:1; cursor:pointer; padding:6px;}
+  #tw-sheet-title {color:#fff; font-size:1.1em; margin:0 0 8px;}
+  #tw-sheet-body {color:#c9d6e2; font-size:.95em; line-height:1.8; margin:0; white-space:pre-line;}
+
+  /* ピン(絵文字divIcon。画像リクエスト無しでレイヤ判別) */
+  .tw-pin {width:30px; height:30px; border-radius:50%; display:flex; align-items:center;
+    justify-content:center; font-size:15px; background:#101a26; cursor:pointer;}
+  .tw-pin-cyan {border:2px solid #3ec6f2; box-shadow:0 0 6px rgba(62,198,242,.7);}
+  .tw-pin-gold {border:2px solid #e8b84b; box-shadow:0 0 6px rgba(232,184,75,.7);}
+  .tw-pin-vermillion {border:2px solid #ff5a3c; box-shadow:0 0 6px rgba(255,90,60,.7);}
+  .tw-pin-pink {border:2px solid #ff4fa3; box-shadow:0 0 6px rgba(255,79,163,.7);}
+
+  /* 結びセクション(「最後に、ひとつだけ」)。カード罫線なしの素のテキストで
+     読後の静けさを演出。上下の余白を広めに取る。 */
+  .tw-closing {margin:64px 0 56px; padding:0 2px;}
+  .tw-closing p {margin:0 0 1.1em;}
+  .tw-closing-lead {color:#7f93a8; font-size:.85em; letter-spacing:.4em;
+    text-indent:.4em; margin-bottom:1.8em !important;}
+  .tw-closing-emphasis {color:#f2f7fb; font-weight:bold;
+    text-shadow:0 0 14px rgba(62,198,242,.5);}
+  .tw-closing-btn {display:block; width:100%; margin:36px 0 0; padding:20px 18px;
+    background:linear-gradient(135deg,#101a26,#0d1520); color:#f2f7fb;
+    border:1px solid rgba(62,198,242,.55); border-radius:16px;
+    font-size:16px; font-weight:bold; letter-spacing:.03em; text-align:center;
+    font-family:'Hiragino Sans','Yu Gothic',sans-serif; cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+    box-shadow:0 0 18px rgba(62,198,242,.18), 0 4px 20px rgba(0,0,0,.4);
+    transition:box-shadow .3s ease, transform .15s ease;}
+  .tw-closing-btn:active {transform:scale(.97);}
+  .tw-closing-logo {letter-spacing:.28em; text-indent:.28em; margin-right:.35em;
+    color:#3ec6f2; text-shadow:0 0 10px rgba(62,198,242,.6);}
+
+  /* タッチしやすいコントロール */
+  .leaflet-bar a {width:40px !important; height:40px !important;
+                  line-height:40px !important; font-size:20px !important;}
+  .leaflet-control-layers-expanded {padding:12px 16px; font-size:14px; line-height:2.1;}
+  .leaflet-control-layers-toggle {width:44px !important; height:44px !important;}
+  .leaflet-popup-content {font-size:14px;}
+  .leaflet-tooltip {font-size:11px; padding:2px 6px; opacity:.92;}
+</style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<div id="tw-timebar" class="tw-timebar">
+  <div class="tw-timebar-year" id="tw-timebar-year">現在</div>
+  <input type="range" id="tw-timebar-slider" min="0" max="400" value="400" step="1" aria-label="時代スライダー">
+  <div class="tw-timebar-ticks"><span>地図</span><span>1945-50</span><span>1961-69</span><span>1974-78</span><span>現在</span></div>
+</div>
+
+<div id="tw-sheet-backdrop" class="tw-sheet-backdrop"></div>
+<div id="tw-sheet" class="tw-sheet">
+  <div class="tw-sheet-handle"></div>
+  <button id="tw-sheet-close" class="tw-sheet-close" aria-label="閉じる">×</button>
+  <h3 id="tw-sheet-title"></h3>
+  <p id="tw-sheet-body"></p>
+</div>
+
+@@NARRATIVE_HTML@@
+
+<div id="tw-hero">
+  <div class="hero-kanji-bg" aria-hidden="true">@@HERO_KANJI@@</div>
+  <p class="hero-eyebrow">@@HERO_EYEBROW@@</p>
+  <h1 class="hero-latin">@@HERO_LATIN_HTML@@</h1>
+  <div class="hero-rule"></div>
+  <p class="hero-meta">@@HERO_META@@</p>
+  <p class="hint">TAP TO ENTER</p>
+</div>
+
+<button id="tw-jump" class="tw-jump" type="button">解説を読む ▼</button>
+
+<script>
+@@DATA_JS@@
+</script>
+<script>
+(function () {
+  "use strict";
+
+  // ---------------------------------------------------------------
+  // 地図初期化
+  // ---------------------------------------------------------------
+  const darkTile = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; OpenStreetMap contributors &copy; CARTO', subdomains: 'abcd', maxZoom: 19
+  });
+  const lightTile = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; OpenStreetMap contributors &copy; CARTO', subdomains: 'abcd', maxZoom: 19
+  });
+  const tile1945 = L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/ort_USA10/{z}/{x}/{y}.png', {
+    attribution: '国土地理院', maxNativeZoom: 17, maxZoom: 18, opacity: 0
+  });
+  const tile1961 = L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/ort_old10/{z}/{x}/{y}.png', {
+    attribution: '国土地理院', maxNativeZoom: 17, maxZoom: 18, opacity: 0
+  });
+  const tile1974 = L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/gazo1/{z}/{x}/{y}.jpg', {
+    attribution: '国土地理院', maxNativeZoom: 17, maxZoom: 18, opacity: 0
+  });
+  const tileNow = L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/{z}/{x}/{y}.jpg', {
+    attribution: '国土地理院', maxNativeZoom: 18, maxZoom: 18, opacity: 0
+  });
+
+  const map = L.map('map', {
+    center: [@@CENTER_LAT@@, @@CENTER_LON@@],
+    zoom: 16,
+    layers: [darkTile, tile1945, tile1961, tile1974, tileNow]
+  });
+  const INITIAL_VIEW = { center: [@@CENTER_LAT@@, @@CENTER_LON@@], zoom: 16 };
+
+  L.control.locate({
+    position: 'topleft',
+    strings: { title: '現在地を表示' },
+    locateOptions: { enableHighAccuracy: true },
+    flyTo: true,
+    keepCurrentZoomLevel: true
+  }).addTo(map);
+
+  // ---------------------------------------------------------------
+  // ピン(絵文字divIcon)
+  // ---------------------------------------------------------------
+  function pinIcon(emoji, cls) {
+    return L.divIcon({
+      html: '<div class="tw-pin tw-pin-' + cls + '">' + emoji + '</div>',
+      className: '', iconSize: [30, 30], iconAnchor: [15, 15]
+    });
+  }
+
+  // ---------------------------------------------------------------
+  // レイヤ構築
+  // ---------------------------------------------------------------
+  function isEmphasisWay(props) {
+    return props.service === 'alley' || props.highway === 'living_street';
+  }
+  const walkNetHalo = L.geoJSON(DATA_WALKNET, {
+    filter: f => isEmphasisWay(f.properties),
+    style: () => ({ color: '#ffffff', weight: 6, opacity: 0.6 })
+  });
+  const walkNetMain = L.geoJSON(DATA_WALKNET, {
+    style: f => {
+      const emphasis = isEmphasisWay(f.properties);
+      return { color: '#e8b84b', weight: emphasis ? 4 : 2.5, opacity: emphasis ? 0.85 : 0.4 };
+    }
+  });
+  const walkNetLayer = L.layerGroup([walkNetHalo, walkNetMain]);
+
+  const riverLayer = L.geoJSON(DATA_RIVERS, {
+    style: () => ({ color: '#3ec6f2', weight: 6, opacity: 0.45, dashArray: '12,10' }),
+    onEachFeature: (f, layer) => layer.bindPopup(f.properties.name + '(位置は推定)')
+  });
+
+  const galleryLayer = L.geoJSON(DATA_GALLERY, {
+    pointToLayer: (f, latlng) => L.marker(latlng, { icon: pinIcon('🎨', 'pink') }),
+    onEachFeature: (f, layer) => { if (f.properties.name) layer.bindPopup(f.properties.name); }
+  });
+
+  const anchorLayer = L.geoJSON(DATA_ANCHORS, {
+    pointToLayer: (f, latlng) => {
+      const emoji = f.properties.kind === 'building' ? '🏛' : '⛩';
+      return L.marker(latlng, { icon: pinIcon(emoji, 'vermillion') });
+    },
+    onEachFeature: (f, layer) => layer.on('click', () => twOpenSheet(f.properties.name, f.properties.desc))
+  });
+
+  const viewpointLayer = L.geoJSON(DATA_VIEWPOINTS, {
+    pointToLayer: (f, latlng) => L.marker(latlng, { icon: pinIcon('👁', 'cyan') }),
+    onEachFeature: (f, layer) => layer.on('click', () => twOpenSheet(f.properties.name, f.properties.desc))
+  });
+
+  const foodLayer = L.geoJSON(DATA_FOOD, {
+    pointToLayer: (f, latlng) => L.marker(latlng, { icon: pinIcon('🍴', 'gold') }),
+    onEachFeature: (f, layer) => layer.on('click', () => twOpenSheet(f.properties.name, f.properties.desc))
+  });
+
+  const nightLayer = L.geoJSON(DATA_NIGHT, {
+    style: () => ({ color: '#a78bff', weight: 2, dashArray: '6,8', opacity: 0.55,
+                     fillColor: '#7b5cff', fillOpacity: 0.13 }),
+    onEachFeature: (f, layer) => layer.bindPopup(f.properties.name + '(おおよその範囲)')
+  });
+
+  const railLineLayer = L.geoJSON(DATA_RAIL_LINES, {
+    style: f => {
+      const underground = f.properties.railway === 'subway'
+        || f.properties.tunnel === 'yes' || f.properties.tunnel === 'building_passage';
+      return { color: '#78909c', weight: underground ? 2 : 3.5,
+               opacity: underground ? 0.5 : 0.75, dashArray: underground ? '5,7' : null };
+    }
+  });
+  const railStationLayer = L.geoJSON(DATA_RAIL_STATIONS, {
+    pointToLayer: (f, latlng) => L.circleMarker(latlng, {
+      radius: 7, color: '#cfd8dc', weight: 3, fill: true, fillColor: '#ffffff', fillOpacity: 1
+    }),
+    onEachFeature: (f, layer) => {
+      if (f.properties.name) layer.bindTooltip(f.properties.name, { permanent: true, direction: 'right', offset: [10, 0] });
+    }
+  });
+  const railLayer = L.layerGroup([railLineLayer, railStationLayer]);
+
+  // 初期表示: 歩く網・消えた川・視点場・鉄道はON。ギャラリー・時のアンカー・
+  // いまも食える歴史・夜の銀座はOFF(タップ可能だがレイヤが増えたための整理)
+  walkNetLayer.addTo(map);
+  riverLayer.addTo(map);
+  viewpointLayer.addTo(map);
+  railLayer.addTo(map);
+
+  L.control.layers(
+    { 'ダーク地図(標準)': darkTile, '淡色地図': lightTile },
+    {
+      '🚶 歩く空間の網': walkNetLayer,
+      '🌊 消えた川と堀': riverLayer,
+      '👁 視点場': viewpointLayer,
+      '🎨 ギャラリー・アート': galleryLayer,
+      '⛩ 時のアンカー': anchorLayer,
+      '🍴 いまも食える歴史': foodLayer,
+      '🌆 夜の銀座': nightLayer,
+      '🚇 鉄道・駅': railLayer
+    },
+    { collapsed: true, position: 'topright' }
+  ).addTo(map);
+
+  // ---------------------------------------------------------------
+  // タイムスライダー(4区間・連続補間)
+  // ---------------------------------------------------------------
+  const slider = document.getElementById('tw-timebar-slider');
+  const yearLabel = document.getElementById('tw-timebar-year');
+  const KEYS = ['map', 'y1945', 'y1961', 'y1974', 'now'];
+  const LABELS = { map: '地図', y1945: '1945-50', y1961: '1961-69', y1974: '1974-78', now: '現在' };
+  const tileLayers = { y1945: tile1945, y1961: tile1961, y1974: tile1974, now: tileNow };
+  function applySlider(value) {
+    const seg = Math.min(Math.floor(value / 100), 3);
+    const t = (value - seg * 100) / 100;
+    const op = { map: 0, y1945: 0, y1961: 0, y1974: 0, now: 0 };
+    const fromKey = KEYS[seg], toKey = KEYS[seg + 1];
+    op[fromKey] = 1 - t; op[toKey] = t;
+    Object.keys(tileLayers).forEach(k => tileLayers[k].setOpacity(op[k]));
+    yearLabel.textContent = t < 0.5 ? LABELS[fromKey] : LABELS[toKey];
+  }
+  slider.addEventListener('input', e => applySlider(+e.target.value));
+  applySlider(+slider.value);
+
+  function animateSliderTo(target, duration) {
+    const start = +slider.value;
+    if (start === target) { applySlider(target); return; }
+    const startTime = performance.now();
+    function step(now) {
+      const t = Math.min(1, (now - startTime) / duration);
+      const eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+      const value = start + (target - start) * eased;
+      slider.value = value;
+      applySlider(value);
+      if (t < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  // 結びセクション「TIMEWALK ▶ 1945年の銀座から、もう一度」ボタン:
+  // 地図まで戻り、初期ビューへリセットしつつスライダーを1945-50へアニメーション。
+  // その後の操作(スライダーを動かす)はユーザーに委ね、自動再生はしない。
+  const closingBtn = document.getElementById('tw-closing-btn');
+  if (closingBtn) {
+    closingBtn.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      map.setView(INITIAL_VIEW.center, INITIAL_VIEW.zoom);
+      animateSliderTo(100, 1400);
+    });
+  }
+
+  // ---------------------------------------------------------------
+  // タップ→解説ボトムシート
+  // ---------------------------------------------------------------
+  const sheet = document.getElementById('tw-sheet');
+  const sheetBackdrop = document.getElementById('tw-sheet-backdrop');
+  const sheetTitle = document.getElementById('tw-sheet-title');
+  const sheetBody = document.getElementById('tw-sheet-body');
+  window.twOpenSheet = function (name, desc) {
+    sheetTitle.textContent = name; sheetBody.textContent = desc;
+    sheet.classList.add('open'); sheetBackdrop.classList.add('open');
+  };
+  function closeSheet() { sheet.classList.remove('open'); sheetBackdrop.classList.remove('open'); }
+  document.getElementById('tw-sheet-close').addEventListener('click', closeSheet);
+  sheetBackdrop.addEventListener('click', closeSheet);
+
+  // ---------------------------------------------------------------
+  // ヒーロー・ジャンプボタン・タイムバー表示切替・カードのフェードイン
+  // ---------------------------------------------------------------
+  const hero = document.getElementById('tw-hero');
+  function heroGone() { hero.classList.add('gone'); }
+  hero.addEventListener('click', heroGone);
+  window.addEventListener('scroll', heroGone, { passive: true, once: true });
+
+  const jumpBtn = document.getElementById('tw-jump');
+  const notes = document.getElementById('tw-notes');
+  const timebar = document.getElementById('tw-timebar');
+  function inMap() { return window.scrollY < Math.max(window.innerHeight, 320) * 0.4; }
+  function renderScrollState() {
+    jumpBtn.textContent = inMap() ? '解説を読む ▼' : '▲ 地図に戻る';
+    if (inMap()) timebar.classList.remove('tw-hidden'); else timebar.classList.add('tw-hidden');
+  }
+  jumpBtn.addEventListener('click', function () {
+    heroGone();
+    if (inMap()) { notes.scrollIntoView({ behavior: 'smooth' }); }
+    else { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+  });
+  window.addEventListener('scroll', renderScrollState, { passive: true });
+  renderScrollState();
+
+  const io = new IntersectionObserver(function (es) {
+    es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('on'); io.unobserve(e.target); } });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.tw-fade').forEach(function (el) { io.observe(el); });
+})();
+</script>
+</body>
+</html>

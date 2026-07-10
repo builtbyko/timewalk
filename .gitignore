@@ -19,6 +19,9 @@ __pycache__/
 *.local
 _local_data/
 local_data/
+04_timewalk/.claude/
+04_timewalk/data/
+04_timewalk/notes/
 
 # Heavy or non-public GIS source data
 01_okayama/
@@ -27,7 +30,10 @@ data/cache/
 data/private/
 localhost_app/
 02_geinintasaku/
+03_okayama+/
 99_sonota/
+notes/
+portforio/
 
 # Generated scratch files
 *.log
