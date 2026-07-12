@@ -1,0 +1,75 @@
+name: Publish TimeWalk social posts
+
+on:
+  schedule:
+    - cron: "17 0,12 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Validate and show due posts without sending them to Buffer"
+        required: true
+        type: boolean
+        default: true
+
+# The workflow needs write access only to record posts that Buffer accepted.
+# No issue, PR, package, deployment, or identity-token permissions are granted.
+permissions:
+  contents: write
+
+concurrency:
+  group: timewalk-social-publisher
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run == true }}
+
+    steps:
+      - name: Check out repository
+        # actions/checkout v7.0.0, pinned to an immutable commit SHA.
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Set up Python
+        # actions/setup-python v6.3.0, pinned to an immutable commit SHA.
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.13"
+
+      - name: Validate post data
+        run: python scripts/buffer_social.py validate
+
+      - name: Preview posts without credentials
+        if: env.DRY_RUN == 'true'
+        run: python scripts/buffer_social.py queue --dry-run --lookahead-hours 36 --max-posts 2
+
+      - name: Queue posts through Buffer
+        if: env.DRY_RUN != 'true'
+        env:
+          # The API key is exposed only to this single step.
+          BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
+          BUFFER_CHANNEL_ID: ${{ vars.BUFFER_CHANNEL_ID }}
+        run: python scripts/buffer_social.py queue --lookahead-hours 36 --max-posts 2
+
+      - name: Record queued posts
+        if: env.DRY_RUN != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if git diff --quiet -- social/posts.json; then
+            echo "No posts were queued."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add social/posts.json
+          git commit -m "Mark Buffer posts as queued"
+          git pull --rebase origin main
+          git push origin HEAD:main
