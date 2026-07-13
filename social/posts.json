@@ -4,11 +4,11 @@
     {
       "id": "ginza-first-walk-001",
       "text": "次の休日、銀座をただ買い物するだけで終わらせない。建築、老舗、夜景、路地、昔の川まで。知っているつもりの銀座を、少し違う角度から歩いてみます。\n\nTimeWalk 銀座\nhttps://builtbyko.github.io/timewalk/",
-      "publish_at": "2026-08-01T20:00:00+09:00",
+      "publish_at": "2026-07-14T20:00:00+09:00",
       "source_url": "https://builtbyko.github.io/timewalk/",
       "image": null,
-      "approved": false,
-      "status": "draft",
+      "approved": true,
+      "status": "ready",
       "buffer_post_id": null,
       "queued_at": null
     }
