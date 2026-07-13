@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "posts": [
+    {
+      "id": "sample-ginza-architecture",
+      "text": "【サンプル・未承認】銀座の建築を紹介する投稿例です。公開前に本文、出典、画像の利用条件を確認してください。",
+      "publish_at": "2026-08-01T20:00:00+09:00",
+      "source_url": "https://builtbyko.github.io/timewalk/",
+      "image": null,
+      "approved": false,
+      "status": "draft",
+      "buffer_post_id": null,
+      "queued_at": null
+    }
+  ]
+}
