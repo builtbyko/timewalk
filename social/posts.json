@@ -8,9 +8,9 @@
       "source_url": "https://builtbyko.github.io/timewalk/",
       "image": null,
       "approved": true,
-      "status": "ready",
-      "buffer_post_id": null,
-      "queued_at": null
+      "status": "queued",
+      "buffer_post_id": "6a54ecc1ccd5b8ed2dfb0611",
+      "queued_at": "2026-07-13T13:48:45.987428Z"
     }
   ]
 }
