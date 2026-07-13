@@ -2,8 +2,8 @@
   "version": 1,
   "posts": [
     {
-      "id": "sample-ginza-architecture",
-      "text": "【サンプル・未承認】銀座の建築を紹介する投稿例です。公開前に本文、出典、画像の利用条件を確認してください。",
+      "id": "ginza-first-walk-001",
+      "text": "次の休日、銀座をただ買い物するだけで終わらせない。建築、老舗、夜景、路地、昔の川まで。知っているつもりの銀座を、少し違う角度から歩いてみます。\n\nTimeWalk 銀座\nhttps://builtbyko.github.io/timewalk/",
       "publish_at": "2026-08-01T20:00:00+09:00",
       "source_url": "https://builtbyko.github.io/timewalk/",
       "image": null,
