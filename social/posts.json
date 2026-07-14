@@ -52,9 +52,9 @@
       "source_url": "https://ginza6.tokyo/facilities/",
       "image": null,
       "approved": true,
-      "status": "ready",
-      "buffer_post_id": null,
-      "queued_at": null
+      "status": "queued",
+      "buffer_post_id": "6a5641f8ceab7572947a582a",
+      "queued_at": "2026-07-14T14:04:39.972676Z"
     },
     {
       "id": "ginza-sony-gallery-001",
