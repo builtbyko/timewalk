@@ -63,9 +63,9 @@
       "source_url": "https://www.sony.co.jp/united/imaging/gallery/facilities/",
       "image": null,
       "approved": true,
-      "status": "ready",
-      "buffer_post_id": null,
-      "queued_at": null
+      "status": "queued",
+      "buffer_post_id": "6a56ff4a94a35a995f799a41",
+      "queued_at": "2026-07-15T03:32:25.886578Z"
     },
     {
       "id": "ginza-san-jukken-bori-001",
@@ -74,9 +74,9 @@
       "source_url": "https://www.city.chuo.lg.jp/a0013/kusei/kousoukeikaku/heiwajigyou/heiwavm/r5kikaku.html",
       "image": null,
       "approved": true,
-      "status": "ready",
-      "buffer_post_id": null,
-      "queued_at": null
+      "status": "queued",
+      "buffer_post_id": "6a56ff4a4bc8b897c7087085",
+      "queued_at": "2026-07-15T03:32:25.886578Z"
     },
     {
       "id": "ginza-sony-park-height-001",
