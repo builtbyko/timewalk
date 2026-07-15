@@ -85,9 +85,9 @@
       "source_url": "https://www.sony.com/ja/SonyInfo/News/Press/202412/24-041/",
       "image": null,
       "approved": true,
-      "status": "ready",
-      "buffer_post_id": null,
-      "queued_at": null
+      "status": "queued",
+      "buffer_post_id": "6a57946b9d49ec1181ac56d6",
+      "queued_at": "2026-07-15T14:08:43.098877Z"
     },
     {
       "id": "ginza-rain-walk-001",
