@@ -118,9 +118,9 @@
       "source_url": "https://www.keishicho.metro.tokyo.lg.jp/kotsu/doro/hoko.html",
       "image": null,
       "approved": true,
-      "status": "ready",
-      "buffer_post_id": null,
-      "queued_at": null
+      "status": "queued",
+      "buffer_post_id": "6a58e8ef7e332d9f91079f46",
+      "queued_at": "2026-07-16T14:21:34.879063Z"
     },
     {
       "id": "ginza-kabuki-one-act-001",
