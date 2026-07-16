@@ -96,9 +96,9 @@
       "source_url": "https://www.ginza.jp/wp-content/uploads/ginza_MetroMap2025.pdf",
       "image": null,
       "approved": true,
-      "status": "ready",
-      "buffer_post_id": null,
-      "queued_at": null
+      "status": "queued",
+      "buffer_post_id": "6a5851894ebd80b204e8573c",
+      "queued_at": "2026-07-16T03:35:37.073105Z"
     },
     {
       "id": "ginza-night-crossing-001",
@@ -107,9 +107,9 @@
       "source_url": "https://www.wako.co.jp/f/clock_tower/",
       "image": null,
       "approved": true,
-      "status": "ready",
-      "buffer_post_id": null,
-      "queued_at": null
+      "status": "queued",
+      "buffer_post_id": "6a5851895b93ec4a86cac4f1",
+      "queued_at": "2026-07-16T03:35:37.073105Z"
     },
     {
       "id": "ginza-hokoten-walk-001",
