@@ -151,9 +151,9 @@
       "source_url": "https://www.archives.go.jp/exhibition/digital/saigai/contents/02_040.html",
       "image": null,
       "approved": true,
-      "status": "ready",
-      "buffer_post_id": null,
-      "queued_at": null
+      "status": "queued",
+      "buffer_post_id": "6a5a35d4ec756ee8134319f6",
+      "queued_at": "2026-07-17T14:01:56.474277Z"
     },
     {
       "id": "ginza-with-children-001",
@@ -162,9 +162,9 @@
       "source_url": "https://ginza6.tokyo/facilities/",
       "image": null,
       "approved": true,
-      "status": "ready",
-      "buffer_post_id": null,
-      "queued_at": null
+      "status": "queued",
+      "buffer_post_id": "6a5a35d561ba18653ff8e2c4",
+      "queued_at": "2026-07-17T14:01:56.474277Z"
     },
     {
       "id": "ginza-lion-interior-001",
