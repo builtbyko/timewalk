@@ -129,9 +129,9 @@
       "source_url": "https://www.shochiku.co.jp/play/theater/kabukiza/makumi/",
       "image": null,
       "approved": true,
-      "status": "ready",
-      "buffer_post_id": null,
-      "queued_at": null
+      "status": "queued",
+      "buffer_post_id": "6a59a31a2b9f6e09f1c7cbf5",
+      "queued_at": "2026-07-17T03:35:54.515762Z"
     },
     {
       "id": "ginza-brand-architecture-date-001",
@@ -140,9 +140,9 @@
       "source_url": "https://www.hermes.com/jp/ja/content/193646-maison-ginza/",
       "image": null,
       "approved": true,
-      "status": "ready",
-      "buffer_post_id": null,
-      "queued_at": null
+      "status": "queued",
+      "buffer_post_id": "6a59a31b80950688785ad75b",
+      "queued_at": "2026-07-17T03:35:54.515762Z"
     },
     {
       "id": "ginza-fire-road-history-001",
