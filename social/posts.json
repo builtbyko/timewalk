@@ -195,9 +195,9 @@
       "source_url": "https://www.kabuki-za.co.jp/siryo/transition.html",
       "image": null,
       "approved": true,
-      "status": "ready",
-      "buffer_post_id": null,
-      "queued_at": null
+      "status": "queued",
+      "buffer_post_id": "6a5b8401e6855b81a78711d5",
+      "queued_at": "2026-07-18T13:47:45.527370Z"
     },
     {
       "id": "ginza-kabuki-inari-001",
@@ -206,9 +206,9 @@
       "source_url": "https://kabuki-za.co.jp/guide/",
       "image": null,
       "approved": true,
-      "status": "ready",
-      "buffer_post_id": null,
-      "queued_at": null
+      "status": "queued",
+      "buffer_post_id": "6a5b84028de1e74f178e1057",
+      "queued_at": "2026-07-18T13:47:45.527370Z"
     },
     {
       "id": "ginza-hermes-forum-001",
