@@ -173,9 +173,9 @@
       "source_url": "https://online.bunka.go.jp/db/heritages/detail/545051",
       "image": null,
       "approved": true,
-      "status": "ready",
-      "buffer_post_id": null,
-      "queued_at": null
+      "status": "queued",
+      "buffer_post_id": "6a5af342fc7fce1db70538cc",
+      "queued_at": "2026-07-18T03:30:10.574309Z"
     },
     {
       "id": "ginza-night-namiki-001",
@@ -184,9 +184,9 @@
       "source_url": "https://www.ginza.jp/g2020/whatwedo/fm840-11",
       "image": null,
       "approved": true,
-      "status": "ready",
-      "buffer_post_id": null,
-      "queued_at": null
+      "status": "queued",
+      "buffer_post_id": "6a5af343658dbc323947fea5",
+      "queued_at": "2026-07-18T03:30:10.574309Z"
     },
     {
       "id": "ginza-kabukiza-layers-001",
