@@ -217,9 +217,9 @@
       "source_url": "https://www.hermes.com/jp/ja/faq/maison-hermes/ginza-maison-hermes/",
       "image": null,
       "approved": true,
-      "status": "ready",
-      "buffer_post_id": null,
-      "queued_at": null
+      "status": "queued",
+      "buffer_post_id": "6a5c49fd67e8ff89c3a6533f",
+      "queued_at": "2026-07-19T03:52:28.952913Z"
     },
     {
       "id": "ginza-wako-clock-faces-001",
@@ -228,9 +228,9 @@
       "source_url": "https://www.wako.co.jp/f/clock_tower/",
       "image": null,
       "approved": true,
-      "status": "ready",
-      "buffer_post_id": null,
-      "queued_at": null
+      "status": "queued",
+      "buffer_post_id": "6a5c49fd5465343a8261727d",
+      "queued_at": "2026-07-19T03:52:28.952913Z"
     },
     {
       "id": "ginza-first-phone-box-001",
