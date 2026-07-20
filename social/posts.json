@@ -250,9 +250,9 @@
       "source_url": "https://ginza6.tokyo/about",
       "image": null,
       "approved": true,
-      "status": "ready",
-      "buffer_post_id": null,
-      "queued_at": null
+      "status": "queued",
+      "buffer_post_id": "6a5d9e02a530934802293805",
+      "queued_at": "2026-07-20T04:03:13.863671Z"
     },
     {
       "id": "timewalk-ginza-same-place-001",
@@ -261,9 +261,9 @@
       "source_url": "https://builtbyko.github.io/timewalk/",
       "image": null,
       "approved": true,
-      "status": "ready",
-      "buffer_post_id": null,
-      "queued_at": null
+      "status": "queued",
+      "buffer_post_id": "6a5d9e027b8edcc469ccab54",
+      "queued_at": "2026-07-20T04:03:13.863671Z"
     }
   ]
 }
