@@ -19,9 +19,9 @@
       "source_url": "https://www.chuo-kanko.or.jp/pages/area/ginza",
       "image": null,
       "approved": true,
-      "status": "ready",
-      "buffer_post_id": null,
-      "queued_at": null
+      "status": "queued",
+      "buffer_post_id": "6a5e31972d136985e2aaf4c4",
+      "queued_at": "2026-07-20T14:32:54.785526Z"
     },
     {
       "id": "ginza-first-hour-route-001",
