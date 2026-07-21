@@ -30,9 +30,9 @@
       "source_url": "https://www.chuo-kanko.or.jp/pages/area/ginza",
       "image": null,
       "approved": true,
-      "status": "ready",
-      "buffer_post_id": null,
-      "queued_at": null
+      "status": "queued",
+      "buffer_post_id": "6a5eeaf39ac5c69457b579d8",
+      "queued_at": "2026-07-21T03:43:46.893577Z"
     },
     {
       "id": "timewalk-ginza-layers-001",
@@ -41,9 +41,9 @@
       "source_url": "https://builtbyko.github.io/timewalk/",
       "image": null,
       "approved": true,
-      "status": "ready",
-      "buffer_post_id": null,
-      "queued_at": null
+      "status": "queued",
+      "buffer_post_id": "6a5eeaf3ff844812f8ac2bcf",
+      "queued_at": "2026-07-21T03:43:46.893577Z"
     },
     {
       "id": "ginza-six-rooftop-001",
