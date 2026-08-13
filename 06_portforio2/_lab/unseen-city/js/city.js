@@ -3,13 +3,15 @@ import { CONFIG } from "./config.js";
 import { forEachLineString, forEachPolygon, numericMeters } from "./geo.js";
 
 const MAJOR_ROADS = new Set(["motorway", "trunk", "primary", "secondary", "tertiary"]);
+// Narrow screens keep only the axes that carry the composition.
+const MOBILE_ROADS = new Set(["motorway", "trunk", "primary"]);
 const INACTIVE_RAIL = new Set(["abandoned", "disused", "razed", "construction", "proposed"]);
 
 function pushTriangle(target, a, b, c, y) {
   target.push(a[0], y, a[1], b[0], y, b[1], c[0], y, c[1]);
 }
 
-function pushRibbonSegment(target, a, b, width, y) {
+function pushRibbonSegment(target, alongs, a, b, width, y, alongA, alongB) {
   const dx = b[0] - a[0];
   const dz = b[1] - a[1];
   const length = Math.hypot(dx, dz);
@@ -23,11 +25,32 @@ function pushRibbonSegment(target, a, b, width, y) {
   const bMinus = [b[0] - px, b[1] - pz];
   pushTriangle(target, aPlus, bPlus, aMinus, y);
   pushTriangle(target, aMinus, bPlus, bMinus, y);
+  // Same vertex order as the two triangles above.
+  alongs.push(alongA, alongB, alongA, alongA, alongB, alongB);
   return true;
+}
+
+// Draws each line from its own start towards its end, so stage 3 reads as the
+// points joining up rather than a second layer fading in over them.
+function attachRibbonReveal(material, uniforms) {
+  material.onBeforeCompile = (shader) => {
+    shader.uniforms.uReveal = uniforms.reveal;
+    shader.vertexShader = shader.vertexShader
+      .replace("#include <common>", "#include <common>\nattribute float aAlong;\nvarying float vAlong;")
+      .replace("#include <begin_vertex>", "#include <begin_vertex>\nvAlong = aAlong;");
+    shader.fragmentShader = shader.fragmentShader
+      .replace("#include <common>", "#include <common>\nuniform float uReveal;\nvarying float vAlong;")
+      .replace(
+        "#include <dithering_fragment>",
+        "#include <dithering_fragment>\nfloat edge = smoothstep(uReveal, uReveal - 0.035, vAlong);\nif (edge <= 0.0) discard;\ngl_FragColor.a *= edge;",
+      );
+  };
+  material.needsUpdate = true;
 }
 
 function createRibbonLayer(collection, projection, options) {
   const positions = [];
+  const alongs = [];
   const features = new Set();
   let segments = 0;
   let skipped = 0;
@@ -39,34 +62,164 @@ function createRibbonLayer(collection, projection, options) {
     }
     const widthMeters = options.widthMeters(properties);
     const width = Math.max(0.04, widthMeters / projection.metersPerUnit);
-    let previous = null;
+
+    const points = [];
     for (const coordinate of coordinates || []) {
-      const current = projection.project(coordinate);
-      if (current && previous && pushRibbonSegment(positions, previous, current, width, options.y)) {
+      const projected = projection.project(coordinate);
+      if (projected) points.push(projected);
+    }
+    if (points.length < 2) return;
+
+    // Normalised distance along this feature, so every line finishes drawing
+    // at the same progress regardless of how long it is.
+    const cumulative = [0];
+    for (let index = 1; index < points.length; index += 1) {
+      const previous = points[index - 1];
+      const current = points[index];
+      cumulative.push(cumulative[index - 1] + Math.hypot(current[0] - previous[0], current[1] - previous[1]));
+    }
+    const total = cumulative[cumulative.length - 1] || 1;
+
+    for (let index = 1; index < points.length; index += 1) {
+      const drawn = pushRibbonSegment(
+        positions,
+        alongs,
+        points[index - 1],
+        points[index],
+        width,
+        options.y,
+        cumulative[index - 1] / total,
+        cumulative[index] / total,
+      );
+      if (drawn) {
         segments += 1;
         features.add(feature);
       }
-      previous = current;
+    }
+
+    if (options.vertexSink) {
+      for (const point of points) options.vertexSink.push(point[0], options.y, point[1]);
     }
   });
 
   if (positions.length === 0) return { object: null, features: 0, segments, skipped };
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute("aAlong", new THREE.Float32BufferAttribute(alongs, 1));
   geometry.computeVertexNormals();
   geometry.computeBoundingSphere();
   const material = new THREE.MeshStandardMaterial({
     color: options.color,
     roughness: options.roughness ?? 0.82,
     metalness: options.metalness ?? 0,
-    transparent: options.opacity < 1,
+    transparent: true,
     opacity: options.opacity,
     depthWrite: options.opacity >= 1,
   });
+  attachRibbonReveal(material, options.uniforms);
   const object = new THREE.Mesh(geometry, material);
   object.name = options.name;
   object.renderOrder = options.renderOrder;
   return { object, features: features.size, segments, skipped };
+}
+
+// The point field is the same vertices the ribbons are built from, so stage 3
+// joins points that were always the line, rather than swapping one layer for
+// another.
+function createPointField(vertices, quality, uniforms) {
+  if (vertices.length < 3) return { object: null, count: 0 };
+
+  const count = vertices.length / 3;
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minZ = Infinity;
+  let maxZ = -Infinity;
+  for (let index = 0; index < count; index += 1) {
+    const x = vertices[index * 3];
+    const z = vertices[index * 3 + 2];
+    if (x < minX) minX = x;
+    if (x > maxX) maxX = x;
+    if (z < minZ) minZ = z;
+    if (z > maxZ) maxZ = z;
+  }
+  const centreX = (minX + maxX) * 0.5;
+  const centreZ = (minZ + maxZ) * 0.5;
+  const reach = Math.max(1e-4, Math.hypot(maxX - centreX, maxZ - centreZ));
+
+  // Order by distance from the centre so the field resolves outwards from the
+  // densest part instead of appearing all at once.
+  const order = new Float32Array(count);
+  for (let index = 0; index < count; index += 1) {
+    const dx = vertices[index * 3] - centreX;
+    const dz = vertices[index * 3 + 2] - centreZ;
+    order[index] = Math.min(1, Math.hypot(dx, dz) / reach);
+  }
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
+  geometry.setAttribute("aOrder", new THREE.Float32BufferAttribute(order, 1));
+  geometry.computeBoundingSphere();
+
+  const material = new THREE.PointsMaterial({
+    color: CONFIG.palette.points,
+    size: quality.mobileLayout ? CONFIG.sequence.mobilePointSizePx : CONFIG.sequence.pointSizePx,
+    sizeAttenuation: false,
+    transparent: true,
+    opacity: 0,
+    depthWrite: false,
+    fog: true,
+  });
+  material.onBeforeCompile = (shader) => {
+    shader.uniforms.uReveal = uniforms.pointReveal;
+    shader.vertexShader = shader.vertexShader
+      .replace("#include <common>", "#include <common>\nattribute float aOrder;\nuniform float uReveal;\nvarying float vShow;")
+      .replace(
+        "#include <begin_vertex>",
+        "#include <begin_vertex>\nvShow = 1.0 - smoothstep(uReveal - 0.06, uReveal, aOrder);",
+      )
+      .replace("gl_PointSize = size;", "gl_PointSize = size * vShow;");
+    shader.fragmentShader = shader.fragmentShader
+      .replace("#include <common>", "#include <common>\nvarying float vShow;")
+      .replace(
+        "#include <dithering_fragment>",
+        "#include <dithering_fragment>\nif (vShow <= 0.0) discard;\ngl_FragColor.a *= vShow;",
+      );
+  };
+
+  const object = new THREE.Points(geometry, material);
+  object.name = "point-field";
+  object.renderOrder = 5;
+  return { object, count };
+}
+
+// Buildings grow out of the ground in a wave travelling from the centre. The
+// delay is derived from position, never random, so a frame can be reproduced.
+function attachBuildingGrowth(material, uniforms) {
+  material.onBeforeCompile = (shader) => {
+    shader.uniforms.uGrow = uniforms.buildingGrow;
+    shader.uniforms.uWave = uniforms.buildingWave;
+    shader.vertexShader = shader.vertexShader
+      .replace(
+        "#include <common>",
+        "#include <common>\nattribute float aDelay;\nuniform float uGrow;\nuniform float uWave;\nvarying float vGrow;",
+      )
+      .replace(
+        "#include <begin_vertex>",
+        [
+          "#include <begin_vertex>",
+          "float grow = clamp((uGrow - aDelay) / max(uWave, 0.0001), 0.0, 1.0);",
+          "grow = grow * grow * (3.0 - 2.0 * grow);",
+          "vGrow = grow;",
+          // Base vertices sit at y = 0, so scaling keeps them pinned to the
+          // ground while the roof rises to its real height.
+          "transformed.y *= grow;",
+        ].join("\n"),
+      );
+    shader.fragmentShader = shader.fragmentShader
+      .replace("#include <common>", "#include <common>\nvarying float vGrow;")
+      .replace("#include <dithering_fragment>", "#include <dithering_fragment>\nif (vGrow <= 0.002) discard;");
+  };
+  material.needsUpdate = true;
 }
 
 function parseRoadClass(properties) {
@@ -174,11 +327,12 @@ function appendBuilding(positions, polygon, properties, projection, quality) {
   return true;
 }
 
-function createBuildings(collection, projection, quality) {
+function createBuildings(collection, projection, quality, uniforms) {
   const candidates = [];
   forEachPolygon(collection, (polygon, properties) => candidates.push({ polygon, properties }));
   const limit = Math.min(candidates.length, quality.maxBuildings);
   const positions = [];
+  const spans = [];
   let built = 0;
   let invalid = 0;
 
@@ -186,8 +340,10 @@ function createBuildings(collection, projection, quality) {
     const index = candidates.length <= limit
       ? selected
       : Math.min(candidates.length - 1, Math.floor((selected * candidates.length) / limit));
+    const start = positions.length;
     if (appendBuilding(positions, candidates[index].polygon, candidates[index].properties, projection, quality)) {
       built += 1;
+      spans.push({ start, end: positions.length });
     } else {
       invalid += 1;
     }
@@ -196,8 +352,47 @@ function createBuildings(collection, projection, quality) {
   if (!positions.length) {
     return { object: null, candidates: candidates.length, built, invalid, thinned: candidates.length - limit };
   }
+
+  // One delay per building, shared by all of its vertices, measured from the
+  // centre of the whole model outwards.
+  const vertexCount = positions.length / 3;
+  const delays = new Float32Array(vertexCount);
+  const centres = spans.map((span) => {
+    let sumX = 0;
+    let sumZ = 0;
+    const points = (span.end - span.start) / 3;
+    for (let offset = span.start; offset < span.end; offset += 3) {
+      sumX += positions[offset];
+      sumZ += positions[offset + 2];
+    }
+    return { span, x: sumX / points, z: sumZ / points };
+  });
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minZ = Infinity;
+  let maxZ = -Infinity;
+  for (const centre of centres) {
+    if (centre.x < minX) minX = centre.x;
+    if (centre.x > maxX) maxX = centre.x;
+    if (centre.z < minZ) minZ = centre.z;
+    if (centre.z > maxZ) maxZ = centre.z;
+  }
+  const originX = (minX + maxX) * 0.5;
+  const originZ = (minZ + maxZ) * 0.5;
+  const reach = Math.max(1e-4, Math.hypot(maxX - originX, maxZ - originZ));
+  // Leave room for the growth itself so the outermost building still finishes.
+  const spread = Math.max(0, 1 - CONFIG.sequence.buildingWave);
+  for (const centre of centres) {
+    const normalized = Math.min(1, Math.hypot(centre.x - originX, centre.z - originZ) / reach);
+    const delay = normalized * spread;
+    for (let offset = centre.span.start; offset < centre.span.end; offset += 3) {
+      delays[offset / 3] = delay;
+    }
+  }
+
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute("aDelay", new THREE.Float32BufferAttribute(delays, 1));
   geometry.computeVertexNormals();
   geometry.computeBoundingBox();
   geometry.computeBoundingSphere();
@@ -208,6 +403,7 @@ function createBuildings(collection, projection, quality) {
     flatShading: true,
     side: THREE.DoubleSide,
   });
+  attachBuildingGrowth(material, uniforms);
   const object = new THREE.Mesh(geometry, material);
   object.name = "buildings";
   object.renderOrder = 4;
@@ -232,7 +428,10 @@ function createGround(bounds) {
     CONFIG.model.minGroundExtent,
     size.z * (1 + CONFIG.model.groundPadding * 2),
   );
-  const geometry = new THREE.PlaneGeometry(width, depth, 1, 1);
+  // A slab rather than a plane: stage 5 turns to the side to discover that the
+  // ground has a thickness, which a flat plane cannot show.
+  const thickness = CONFIG.strata.slabThickness;
+  const geometry = new THREE.BoxGeometry(width, thickness, depth);
   const material = new THREE.MeshStandardMaterial({
     color: CONFIG.palette.ground,
     roughness: 0.96,
@@ -240,8 +439,8 @@ function createGround(bounds) {
   });
   const ground = new THREE.Mesh(geometry, material);
   ground.name = "city-ground";
-  ground.rotation.x = -Math.PI / 2;
-  ground.position.set(center.x, CONFIG.model.groundY, center.z);
+  // Top face sits where the plane used to, so nothing above it moves.
+  ground.position.set(center.x, CONFIG.model.groundY - thickness * 0.5, center.z);
   ground.renderOrder = 0;
   return ground;
 }
@@ -249,6 +448,21 @@ function createGround(bounds) {
 export function createCity(data, projection, quality) {
   const group = new THREE.Group();
   group.name = "phase-2-city";
+
+  // Shared by every layer so one sequence state drives the whole model.
+  // Defaults are the finished city, which keeps the still frame unchanged for
+  // anything that never applies a sequence.
+  const uniforms = {
+    reveal: { value: 1 },
+    pointReveal: { value: 1 },
+    buildingGrow: { value: 1 },
+    buildingWave: { value: CONFIG.sequence.buildingWave },
+  };
+  const vertexSink = [];
+
+  // A narrow screen keeps the main axes and drops the smaller classes, rather
+  // than thinning the point field that stage 2 depends on.
+  const roadClasses = quality.mobileLayout ? MOBILE_ROADS : MAJOR_ROADS;
 
   const roads = createRibbonLayer(data.roads, projection, {
     name: "major-roads",
@@ -259,9 +473,11 @@ export function createCity(data, projection, quality) {
     renderOrder: 2,
     filter: (properties) => {
       const roadClass = parseRoadClass(properties);
-      return roadClass ? MAJOR_ROADS.has(roadClass) : true;
+      return roadClass ? roadClasses.has(roadClass) : true;
     },
     widthMeters: roadWidth,
+    uniforms,
+    vertexSink,
   });
   const waterways = createRibbonLayer(data.waterways, projection, {
     name: "waterways",
@@ -273,6 +489,8 @@ export function createCity(data, projection, quality) {
     renderOrder: 1,
     filter: () => true,
     widthMeters: (properties) => lineWidth(properties, CONFIG.model.waterwayWidthMeters),
+    uniforms,
+    vertexSink,
   });
   const rail = createRibbonLayer(data.rail, projection, {
     name: "rail-network-reference",
@@ -284,14 +502,31 @@ export function createCity(data, projection, quality) {
     renderOrder: 3,
     filter: railwayIsVisible,
     widthMeters: (properties) => lineWidth(properties, CONFIG.model.railWidthMeters),
+    uniforms,
+    vertexSink,
   });
-  const buildings = createBuildings(data.buildings, projection, quality);
+  const buildings = createBuildings(data.buildings, projection, quality, uniforms);
+  const points = createPointField(vertexSink, quality, uniforms);
 
-  for (const layer of [waterways.object, roads.object, rail.object, buildings.object]) {
-    if (layer) group.add(layer);
+  // Grouped by what each layer means, because that is the axis stage 6
+  // separates along. Present surface stays put; the rest drop away from it.
+  const surface = new THREE.Group();
+  surface.name = "present-surface";
+  const railLayer = new THREE.Group();
+  railLayer.name = "rail-layer";
+  const past = new THREE.Group();
+  past.name = "past-layer";
+
+  for (const layer of [roads.object, buildings.object, points.object]) {
+    if (layer) surface.add(layer);
   }
+  if (rail.object) railLayer.add(rail.object);
+  if (waterways.object) past.add(waterways.object);
+  group.add(surface, railLayer, past);
+
   const contentBounds = modelBounds(group);
-  group.add(createGround(contentBounds));
+  const ground = createGround(contentBounds);
+  surface.add(ground);
 
   return {
     group,
@@ -311,7 +546,23 @@ export function createCity(data, projection, quality) {
       buildings: buildings.built,
       invalidBuildings: buildings.invalid,
       thinnedBuildings: buildings.thinned,
+      points: points.count,
     }),
+    applySequence(state) {
+      uniforms.reveal.value = state.lineReveal;
+      uniforms.pointReveal.value = state.pointReveal;
+      uniforms.buildingGrow.value = state.buildingGrow;
+      if (points.object) points.object.material.opacity = state.pointOpacity;
+      // Separation is presentation, not depth. See the note on screen.
+      const separation = state.strataT ?? 0;
+      railLayer.position.y = -CONFIG.strata.railDrop * separation;
+      past.position.y = -CONFIG.strata.pastDrop * separation;
+      // Turning to the side also cuts the ground down to a finite specimen:
+      // an endless slab has no readable edge and would roof over everything
+      // that drops below it.
+      const contracted = THREE.MathUtils.lerp(1, CONFIG.strata.slabContractTo, state.sideT ?? 0);
+      ground.scale.set(contracted, 1, contracted);
+    },
     dispose() {
       disposeObject3D(group);
     },

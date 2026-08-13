@@ -45,6 +45,17 @@
         </div>
       </section>
 
+      <p id="strata-legend" class="strata-legend" hidden>
+        <span class="strata-legend__item">現在の地表</span>
+        <span class="strata-legend__item">鉄道</span>
+        <span class="strata-legend__item">旧河川（参考線形）</span>
+      </p>
+
+      <p id="scroll-cue" class="scroll-cue">
+        <span class="scroll-cue__label">Scroll</span>
+        <span class="scroll-cue__line" aria-hidden="true"></span>
+      </p>
+
       <aside id="debug-panel" class="debug-panel" hidden>
         <pre id="debug-output" aria-live="polite">Debug information is unavailable.</pre>
       </aside>
@@ -56,7 +67,7 @@
             © OpenStreetMap contributors · ODbL 1.0
           </a><br />
           旧河川は参考線形であり、公式境界・正確な流路・深度を示すものではありません。<br />
-          建物高さ、線幅、道路・鉄道の上下位置は表示用であり、実測値ではありません。
+          建物高さ、線幅、道路・鉄道の上下位置、層の間隔は表示用であり、実測値ではありません。
         </p>
         <button
           id="debug-toggle"
@@ -76,6 +87,8 @@
         </p>
       </noscript>
     </main>
+
+    <div id="scroll-track" class="scroll-track" aria-hidden="true"></div>
 
     <script type="module" src="./js/app.js"></script>
   </body>

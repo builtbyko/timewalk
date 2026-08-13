@@ -6,6 +6,8 @@ import { createLocalProjection } from "./geo.js";
 import { createCity } from "./city.js";
 import { createFixedCamera, frameFixedCamera } from "./camera.js";
 import { createUI } from "./ui.js";
+import { evaluateSequence, snapProgressForReducedMotion } from "./sequence.js";
+import { createScrollDriver } from "./scroll.js";
 
 function viewportFor(host) {
   const rect = host.getBoundingClientRect();
@@ -49,12 +51,15 @@ function createScene() {
   return scene;
 }
 
-function debugText({ quality, assets, city, renderer }) {
+function debugText({ quality, assets, city, renderer, sequence }) {
   const info = renderer.info.render;
   const assetState = Object.entries(assets.status).map(([key, value]) => `${key}: ${value}`).join("\n");
   return [
     `quality: ${quality.tier}${quality.forced ? " (forced)" : ""}`,
     `dpr: ${renderer.getPixelRatio().toFixed(2)}`,
+    `act 1: ${(sequence.progress * 100).toFixed(0)}% (${sequence.stage})`,
+    `points: ${city.stats.points} / reveal ${sequence.pointReveal.toFixed(2)}`,
+    `lines: ${sequence.lineReveal.toFixed(2)} / grow ${sequence.buildingGrow.toFixed(2)}`,
     assetState,
     `roads: ${city.stats.roadFeatures} features / ${city.stats.roadSegments} segments`,
     `rail: ${city.stats.railFeatures} features / ${city.stats.railSegments} segments`,
@@ -103,14 +108,17 @@ async function bootstrap(ui) {
     throw error;
   }
 
+  let sequence = evaluateSequence(0);
+  city.applySequence(sequence);
+
   const resizeAndRender = () => {
     if (disposed || contextLost || document.hidden) return;
     const viewport = viewportFor(ui.root);
     renderer.setPixelRatio(pixelRatioFor(quality));
     renderer.setSize(viewport.width, viewport.height, true);
-    frameFixedCamera(camera, city.bounds, viewport);
+    frameFixedCamera(camera, city.bounds, viewport, sequence);
     renderer.render(scene, camera);
-    ui.setDebug(debugText({ quality, assets, city, renderer }));
+    ui.setDebug(debugText({ quality, assets, city, renderer, sequence }));
   };
 
   const scheduleRender = () => {
@@ -121,8 +129,28 @@ async function bootstrap(ui) {
     });
   };
 
+  const scrollDriver = createScrollDriver({
+    onProgress(progress, { reducedMotion }) {
+      if (reducedMotion) {
+        // Snap between a few states and hold the camera still, rather than
+        // interpolating a move the reader asked not to see.
+        sequence = { ...evaluateSequence(snapProgressForReducedMotion(progress)), cameraT: 1 };
+      } else {
+        sequence = evaluateSequence(progress);
+      }
+      city.applySequence(sequence);
+      ui.setScrollStarted(progress > 0.01);
+      ui.setStrataLegendVisible(sequence.strataT > 0.12);
+      scheduleRender();
+    },
+  });
+  const scrollTrack = document.getElementById("scroll-track");
+  if (scrollTrack) scrollTrack.style.height = scrollDriver.trackHeightCss();
+
   const onVisibility = () => {
-    if (!document.hidden) scheduleRender();
+    // Re-read the scroll position rather than trusting the last state: nothing
+    // was scheduled while the page was hidden.
+    if (!document.hidden) scrollDriver.start();
   };
   const onContextLost = (event) => {
     event.preventDefault();
@@ -135,7 +163,7 @@ async function bootstrap(ui) {
     ui.showReady();
     scheduleRender();
   };
-  const onPageShow = () => scheduleRender();
+  const onPageShow = () => scrollDriver.start();
   const onPageHide = (event) => {
     if (!event.persisted) dispose();
   };
@@ -157,6 +185,7 @@ async function bootstrap(ui) {
     if (disposed) return;
     disposed = true;
     if (pendingFrame) window.cancelAnimationFrame(pendingFrame);
+    scrollDriver.dispose();
     resizeObserver?.disconnect();
     window.removeEventListener("resize", scheduleRender);
     window.removeEventListener("orientationchange", scheduleRender);
@@ -173,6 +202,7 @@ async function bootstrap(ui) {
     ui.dispose();
   }
 
+  scrollDriver.start();
   resizeAndRender();
   const debugEnabled = new URLSearchParams(window.location.search).get(CONFIG.debug.queryParameter) === "1";
   ui.setDebugVisible(debugEnabled);

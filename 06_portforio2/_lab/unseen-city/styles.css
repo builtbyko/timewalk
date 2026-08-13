@@ -27,11 +27,96 @@
 html,
 body {
   width: 100%;
-  height: 100%;
   margin: 0;
-  overflow: hidden;
-  overscroll-behavior: none;
+  /* Act 1 is scroll driven, so the document must be taller than the viewport.
+     Only sideways overflow is suppressed. */
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
   background: var(--ink-0);
+}
+
+/* Gives the document its height. The visible layer is fixed on top of it. */
+.scroll-track {
+  position: relative;
+  z-index: 0;
+  width: 100%;
+  pointer-events: none;
+}
+
+/* Three separated slabs are ambiguous without names. Kept to three words and
+   shown only while they are apart, so it stays a caption and not a HUD. */
+.strata-legend {
+  position: absolute;
+  bottom: 16vh;
+  left: 50%;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+  align-items: flex-start;
+  margin: 0;
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateX(-50%);
+  transition: opacity 700ms ease;
+}
+
+.strata-legend[data-visible="true"] {
+  opacity: 0.66;
+}
+
+.strata-legend__item::before {
+  display: inline-block;
+  width: 1.6em;
+  height: 1px;
+  margin-right: 0.8em;
+  vertical-align: middle;
+  background: currentcolor;
+  content: "";
+}
+
+/* The act opens on near darkness, so the one affordance the reader needs is
+   that scrolling does something. It leaves as soon as they start. */
+.scroll-cue {
+  position: absolute;
+  bottom: 8vh;
+  left: 50%;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75em;
+  align-items: center;
+  margin: 0;
+  font-size: 0.72rem;
+  letter-spacing: 0.32em;
+  text-indent: 0.32em;
+  text-transform: uppercase;
+  pointer-events: none;
+  opacity: 0.62;
+  transform: translateX(-50%);
+  transition: opacity 600ms ease;
+}
+
+.scroll-cue[data-started="true"] {
+  opacity: 0;
+}
+
+.scroll-cue__line {
+  width: 1px;
+  height: 3.4em;
+  background: linear-gradient(180deg, currentcolor 0%, transparent 100%);
+}
+
+.is-loading .scroll-cue {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-cue {
+    transition: none;
+  }
 }
 
 body {

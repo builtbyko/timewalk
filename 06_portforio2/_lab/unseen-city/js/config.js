@@ -55,6 +55,9 @@ export const CONFIG = Object.freeze({
     // Former waterways read as past time, not as present water. Amber keeps
     // them from being mistaken for an official channel or a live river.
     waterways: 0x6d4f2c,
+    // The point field is the city before it has form; cooler and dimmer than
+    // the roads it becomes.
+    points: 0x8fa6bd,
     skyLight: 0x9aacbf,
     groundLight: 0x050d1a,
     keyLight: 0xc8d8e4,
@@ -111,6 +114,66 @@ export const CONFIG = Object.freeze({
     // retreats past `fogVisibilityLimit / fogDensity`. Raise it and near-square
     // viewports fade out, lower it and wide ones crop harder.
     fogVisibilityLimit: 1.24,
+    // Act 2 swings towards a low oblique so the ground is read edge-on. Fully
+    // level would hide everything that drops below the slab, so it keeps
+    // enough lift to see down the stack.
+    sideDirection: Object.freeze([0.99, 0.34, 0.62]),
+    // Once the layers separate the subject is a tall stack, so the camera
+    // looks down it rather than at the surface alone.
+    strataTargetDrop: 0.46,
+    strataDistanceScale: 1.3,
+  }),
+  sequence: Object.freeze({
+    // Length measured in viewport heights, so the reading pace is the same on
+    // a phone and a desktop instead of tracking a pixel count.
+    scrollViewports: 5,
+    // Stage ends as a fraction of the whole, carried over from the second
+    // budget in the experience notes: 2.5 / 2.5 / 3 / 4 / 3.5 / 5.5 of 21.
+    stageEnds: Object.freeze({
+      darkness: 0.119,
+      points: 0.238,
+      lines: 0.381,
+      buildings: 0.571,
+      side: 0.738,
+      strata: 1,
+    }),
+    // Fraction of the building stage a single building spends growing. The
+    // rest of that stage is the wave travelling from the centre outwards.
+    buildingWave: 0.42,
+    // Points hold a low glow through the darkness so the space reads as deep
+    // rather than empty before anything is legible.
+    darknessPointOpacity: 0.16,
+    // The very first frame still has to show something. The experience notes
+    // put a few points at the threshold of perception, and a truly black
+    // landing state reads as a page that failed to load.
+    thresholdPointOpacity: 0.055,
+    thresholdPointReveal: 0.035,
+    // Lines take over as the subject; the points stay only as a faint trace.
+    residualPointOpacity: 0.3,
+    pointSizePx: 2.3,
+    mobilePointSizePx: 1.7,
+    // Camera pulls in over the act. 1 is the Phase 2 framing.
+    startDistanceScale: 1.32,
+    startHeightScale: 1.14,
+    // prefers-reduced-motion snaps here instead of interpolating: darkness,
+    // the line network, the finished city, and the separated layers.
+    reducedMotionStops: Object.freeze([0, 0.31, 0.571, 1]),
+  }),
+  strata: Object.freeze({
+    // World units, and presentation only. These gaps say "different kind of
+    // thing", never "this many metres down"; the credit line on screen has to
+    // keep saying so.
+    // The slab is around 170 units across, so the gaps have to be tens of
+    // units before the stack reads as separate layers rather than a crust.
+    railDrop: 30,
+    pastDrop: 62,
+    // The ground stops being a plane and becomes a slab, so stage 5 has a
+    // thickness to discover from the side.
+    slabThickness: 2.2,
+    // In Act 1 the slab runs far past the data so its edge dies in fog. Act 2
+    // needs the opposite: it contracts to roughly the city footprint so the
+    // edge can be read, and so the layers below are not hidden under it.
+    slabContractTo: 0.3,
   }),
   loading: Object.freeze({ timeoutMs: 15000 }),
   debug: Object.freeze({ queryParameter: "debug" }),

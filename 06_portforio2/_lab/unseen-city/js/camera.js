@@ -11,8 +11,15 @@ export function createFixedCamera() {
   return new THREE.PerspectiveCamera(CONFIG.camera.desktopFov, 1, 0.1, 3000);
 }
 
-export function frameFixedCamera(camera, sourceBounds, viewport) {
+export function frameFixedCamera(camera, sourceBounds, viewport, sequence) {
   const bounds = safeBounds(sourceBounds);
+  // 1 is the finished Phase 2 framing; earlier in the act the camera sits
+  // further back and a little higher, and closes in as the city forms.
+  const advance = sequence ? THREE.MathUtils.clamp(sequence.cameraT, 0, 1) : 1;
+  // Act 2: swing round until the ground is edge-on, then pull back to take in
+  // the whole stack once the layers have parted.
+  const toSide = sequence ? THREE.MathUtils.clamp(sequence.sideT ?? 0, 0, 1) : 0;
+  const parted = sequence ? THREE.MathUtils.clamp(sequence.strataT ?? 0, 0, 1) : 0;
   const size = bounds.getSize(new THREE.Vector3());
   const center = bounds.getCenter(new THREE.Vector3());
   const aspect = Math.max(0.1, viewport.width / Math.max(1, viewport.height));
@@ -36,14 +43,30 @@ export function frameFixedCamera(camera, sourceBounds, viewport) {
   // need a distance that frames the whole footprint but shows almost nothing,
   // so the fit is sacrificed and the city is allowed to run off-frame instead.
   const fogLimit = CONFIG.camera.fogVisibilityLimit / CONFIG.scene.fogDensity;
-  const distance = Math.min(Math.max(widthDistance, heightDistance) * padding, fogLimit);
+  const pullBack = THREE.MathUtils.lerp(CONFIG.sequence.startDistanceScale, 1, advance);
+  // The ceiling is applied after the pull-back, so no point in the act can put
+  // the camera somewhere the city cannot be seen from.
+  const strataPull = THREE.MathUtils.lerp(1, CONFIG.camera.strataDistanceScale, parted);
+  const distance = Math.min(
+    Math.max(widthDistance, heightDistance) * padding * pullBack * strataPull,
+    fogLimit,
+  );
 
+  // Once the layers part, the subject reaches below the ground, so the camera
+  // looks down the stack rather than at the surface alone.
+  const stackDrop = (CONFIG.strata.pastDrop * CONFIG.camera.strataTargetDrop) * parted;
   const target = new THREE.Vector3(
     center.x,
-    bounds.min.y + modelHeight * CONFIG.camera.targetHeightRatio,
+    bounds.min.y + modelHeight * CONFIG.camera.targetHeightRatio - stackDrop,
     center.z,
   );
-  const direction = new THREE.Vector3(...CONFIG.camera.direction).normalize();
+  const heightLift = THREE.MathUtils.lerp(CONFIG.sequence.startHeightScale, 1, advance);
+  const rawDirection = new THREE.Vector3(...CONFIG.camera.direction);
+  rawDirection.y *= heightLift;
+  // Rotating towards the side view is a lerp between two fixed directions, so
+  // the path never reverses and never passes through the model.
+  const sideDirection = new THREE.Vector3(...CONFIG.camera.sideDirection);
+  const direction = rawDirection.normalize().lerp(sideDirection.normalize(), toSide).normalize();
   if (!portrait) {
     const forward = direction.clone().negate();
     const cameraRight = forward.cross(camera.up).normalize();
