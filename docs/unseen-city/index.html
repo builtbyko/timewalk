@@ -2,81 +2,58 @@
 <html lang="ja">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="dark" />
-    <meta name="theme-color" content="#02050b" />
-    <meta
-      name="description"
-      content="実在する都市データから、銀座周辺の見えない構造を立ち上げるWebGLスタディ。"
-    />
-    <title>Unseen City — Built by KO</title>
-    <link rel="stylesheet" href="./styles.css" />
+    <title>Unseen City — 移転しました</title>
+    <link rel="canonical" href="https://builtbyko.github.io/portforio/" />
+    <meta http-equiv="refresh" content="0; url=https://builtbyko.github.io/portforio/" />
+    <style>
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+      }
+
+      body {
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+        color: #c3d0de;
+        text-align: center;
+        background: #081220;
+      }
+
+      h1 {
+        margin: 0 0 0.6em;
+        font-size: 1rem;
+        font-weight: 500;
+        letter-spacing: 0.28em;
+        text-indent: 0.28em;
+        text-transform: uppercase;
+      }
+
+      p {
+        max-width: 34em;
+        margin: 0 0 1.4em;
+        font-size: 0.9rem;
+        line-height: 1.8;
+        color: #8fa3b8;
+      }
+
+      a {
+        color: #dbe6f0;
+      }
+    </style>
   </head>
 
-  <body class="is-loading">
-    <main class="experience" aria-label="Unseen City 静止都市模型">
-      <div
-        id="scene-root"
-        class="scene-root"
-        role="img"
-        aria-label="銀座周辺の道路、鉄道、建物、旧河川の参考線形から構成した都市模型"
-      ></div>
-
-      <header class="project-mark" aria-label="作品名">
-        <p class="project-mark__maker">Built by KO</p>
-        <h1 class="project-mark__title">Unseen City</h1>
-      </header>
-
-      <section id="loading" class="loading" role="status" aria-live="polite">
-        <div class="loading__content">
-          <p class="loading__title">Unseen City</p>
-          <p id="loading-status" class="loading__status">都市データを読み込んでいます</p>
-          <span class="loading__track" aria-hidden="true"><span></span></span>
-        </div>
-      </section>
-
-      <section id="fallback" class="fallback" role="alert" hidden>
-        <div class="fallback__content">
-          <p class="fallback__eyebrow">Unseen City</p>
-          <h2>都市模型を表示できませんでした。</h2>
-          <p id="fallback-message">
-            WebGL 2に対応した最新のブラウザで、ページを再読み込みしてください。
-          </p>
-        </div>
-      </section>
-
-      <aside id="debug-panel" class="debug-panel" hidden>
-        <pre id="debug-output" aria-live="polite">Debug information is unavailable.</pre>
-      </aside>
-
-      <footer class="site-meta">
-        <p class="site-credit">
-          地理データ:
-          <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">
-            © OpenStreetMap contributors · ODbL 1.0
-          </a><br />
-          旧河川は参考線形であり、公式境界・正確な流路・深度を示すものではありません。<br />
-          建物高さ、線幅、道路・鉄道の上下位置は表示用であり、実測値ではありません。
-        </p>
-        <button
-          id="debug-toggle"
-          class="debug-toggle"
-          type="button"
-          aria-controls="debug-panel"
-          aria-expanded="false"
-          aria-pressed="false"
-        >
-          Debug
-        </button>
-      </footer>
-
-      <noscript>
-        <p class="noscript-message">
-          この都市模型の表示にはJavaScriptが必要です。ブラウザの設定を確認してください。
-        </p>
-      </noscript>
+  <body>
+    <main>
+      <h1>Unseen City</h1>
+      <p>
+        この作品は新しい場所へ移りました。スクロールで都市が立ち上がり、地層に分かれるところまで見られます。
+      </p>
+      <p><a href="https://builtbyko.github.io/portforio/">https://builtbyko.github.io/portforio/</a></p>
     </main>
-
-    <script type="module" src="./js/app.js"></script>
   </body>
 </html>
