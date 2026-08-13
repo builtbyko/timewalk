@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-07-20T12:16:36+00:00",
+  "project": "BUILT BY KO — UNSEEN CITY / Phase 2",
+  "area": {
+    "label": "Ginza and immediate surroundings",
+    "bbox_wgs84": [
+      139.759,
+      35.6645,
+      139.772,
+      35.6755
+    ],
+    "center_wgs84": [
+      139.7655,
+      35.67
+    ]
+  },
+  "coordinate_reference_system": {
+    "identifier": "OGC:CRS84 / RFC 7946",
+    "geodetic_basis": "WGS 84 (EPSG:4326)",
+    "axis_order_in_files": "longitude, latitude",
+    "note": "Runtime Three.js coordinates are a display projection, not an official survey CRS."
+  },
+  "processing": {
+    "clip_bbox_wgs84": [
+      139.759,
+      35.6645,
+      139.772,
+      35.6755
+    ],
+    "geometry_outside_clip_bbox_retained": false,
+    "raw_overpass_responses_stored": false
+  },
+  "datasets": {
+    "roads": {
+      "path": "data/roads.geojson",
+      "format": "GeoJSON FeatureCollection",
+      "feature_count": 273,
+      "coordinate_count": 717,
+      "size_bytes": 73924,
+      "source": "OpenStreetMap via Overpass API",
+      "source_snapshot": "2026-07-20T09:35:15Z",
+      "limitations": [
+        "Only motorway through tertiary classes and their link roads are retained.",
+        "Every output LineString is clipped to the project bbox.",
+        "Line locations and classifications reflect the OSM snapshot and are not official road geometry."
+      ]
+    },
+    "buildings": {
+      "path": "data/buildings.geojson",
+      "format": "GeoJSON FeatureCollection",
+      "feature_count": 2524,
+      "coordinate_count": 14922,
+      "size_bytes": 936156,
+      "source": "OpenStreetMap via Overpass API",
+      "source_snapshot": "2026-07-20T09:35:15Z",
+      "limitations": [
+        "Footprints are incomplete wherever OSM lacks building geometry.",
+        "Every output footprint is clipped to the project bbox.",
+        "display_height_m may be derived from OSM levels or a clearly labelled visual fallback; it is not authoritative height data.",
+        "Invalid or unjoinable multipolygon members are omitted."
+      ]
+    },
+    "railways": {
+      "path": "data/railways.geojson",
+      "format": "GeoJSON FeatureCollection",
+      "feature_count": 103,
+      "coordinate_count": 350,
+      "size_bytes": 33320,
+      "source": "OpenStreetMap via 04_timewalk rail cache",
+      "source_snapshot": "2026-07-06T03:23:31Z",
+      "limitations": [
+        "Every output LineString is clipped to the project bbox.",
+        "The tunnel tag is a category only; it must not be converted into measured depth.",
+        "Track ways may be parallel or duplicated because each OSM way is retained."
+      ]
+    },
+    "historic_waterways_reference": {
+      "path": "data/historic-waterways-reference.geojson",
+      "format": "GeoJSON FeatureCollection",
+      "feature_count": 4,
+      "coordinate_count": 18,
+      "size_bytes": 1527,
+      "source": "Hand-traced reference lines reused from 04_timewalk/scripts/ginza_build.py",
+      "source_snapshot": null,
+      "limitations": [
+        "Every output reference line is clipped to the project bbox.",
+        "Approximate reference lines, not official boundaries or surveyed centerlines.",
+        "No underground status or depth is encoded.",
+        "Historical interpretation requires separate source verification before factual publication."
+      ]
+    }
+  },
+  "license_and_attribution": {
+    "openstreetmap": "© OpenStreetMap contributors; data available under ODbL 1.0.",
+    "historic_waterways_reference": "Project-authored reference geometry; underlying historical interpretation requires source verification."
+  }
+}
